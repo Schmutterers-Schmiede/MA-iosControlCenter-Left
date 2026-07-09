@@ -408,7 +408,7 @@ function HomeScreen() {
 }
 
 // "right" triggers CC from the top-right corner; swap to "left" for the other condition
-const CC_TRIGGER_SIDE: "right" | "left" = "right";
+const CC_TRIGGER_SIDE: "right" | "left" = "left";
 
 export default function App() {
   const [ccOpen, setCcOpen] = useState(false);
