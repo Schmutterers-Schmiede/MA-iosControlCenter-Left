@@ -18,7 +18,16 @@ import {
   Signal,
   Battery,
   Lock,
+  ArrowDown,
 } from "lucide-react";
+import { getContext, nextUrl, INSTRUCTIONS } from './tallyFlow';
+import { InstructionsOverlay } from './InstructionsOverlay';
+
+declare global {
+  interface Window {
+    Tally: any;
+  }
+}
 
 const APP_ICONS = [
   { name: "Messages", bg: "bg-green-500", icon: "💬" },
@@ -110,9 +119,8 @@ function CCTile({
   return (
     <button
       onClick={onToggle}
-      className={`rounded-2xl flex items-center justify-center transition-all duration-150 active:scale-95 ${
-        active ? "bg-white text-black" : "bg-white/20 text-white"
-      } ${className}`}
+      className={`rounded-2xl flex items-center justify-center transition-all duration-150 active:scale-95 ${active ? "bg-white text-black" : "bg-white/20 text-white"
+        } ${className}`}
     >
       {children}
     </button>
@@ -248,9 +256,8 @@ function ControlCenter({ visible, onClose }: { visible: boolean; onClose: () => 
               className="flex items-center gap-2 active:opacity-70 transition-opacity"
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                  wifi ? "bg-white" : "bg-white/30"
-                }`}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${wifi ? "bg-white" : "bg-white/30"
+                  }`}
               >
                 <Wifi size={14} className={wifi ? "text-black" : "text-white"} />
               </div>
@@ -264,9 +271,8 @@ function ControlCenter({ visible, onClose }: { visible: boolean; onClose: () => 
               className="flex items-center gap-2 active:opacity-70 transition-opacity"
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                  bluetooth ? "bg-white" : "bg-white/30"
-                }`}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${bluetooth ? "bg-white" : "bg-white/30"
+                  }`}
               >
                 <Bluetooth size={14} className={bluetooth ? "text-black" : "text-white"} />
               </div>
@@ -280,9 +286,8 @@ function ControlCenter({ visible, onClose }: { visible: boolean; onClose: () => 
               className="flex items-center gap-2 active:opacity-70 transition-opacity"
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                  airplay ? "bg-white" : "bg-white/30"
-                }`}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${airplay ? "bg-white" : "bg-white/30"
+                  }`}
               >
                 <Airplay size={14} className={airplay ? "text-black" : "text-white"} />
               </div>
@@ -411,7 +416,25 @@ function HomeScreen() {
 const CC_TRIGGER_SIDE: "right" | "left" = "left";
 
 export default function App() {
+  const startTimeRef = useRef<number>(Date.now());
+  const timeToOpenRef = useRef<number | null>(null);
+  const [showInstructions, setShowInstructions] = useState(true);
   const [ccOpen, setCcOpen] = useState(false);
+  const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
+
+  function handleStart() {
+    startTimeRef.current = Date.now(); // timer starts here, not on page load
+    timeToOpenRef.current = null;
+    setHasOpenedOnce(false);
+    setShowInstructions(false);
+  }
+
+  function markOpenedIfFirstTime() {
+    if (timeToOpenRef.current === null) {
+      timeToOpenRef.current = Date.now() - startTimeRef.current;
+      setHasOpenedOnce(true);
+    }
+  }
   const mouseStartY = useRef<number | null>(null);
 
   function isInTriggerZone(clientX: number, rect: DOMRect) {
@@ -420,6 +443,7 @@ export default function App() {
   }
 
   function handleMouseDown(e: React.MouseEvent) {
+    if (showInstructions) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relY = e.clientY - rect.top;
     if (relY < 60 && isInTriggerZone(e.clientX, rect)) mouseStartY.current = relY;
@@ -429,13 +453,17 @@ export default function App() {
     if (mouseStartY.current === null) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relY = e.clientY - rect.top;
-    if (relY - mouseStartY.current > 30) setCcOpen(true);
+    if (relY - mouseStartY.current > 30) {
+      setCcOpen(true);
+      markOpenedIfFirstTime();
+    }
     mouseStartY.current = null;
   }
 
   const touchStartY = useRef<number | null>(null);
 
   function handleTouchStart(e: React.TouchEvent) {
+    if (showInstructions) return;
     const t = e.touches[0];
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     if (t.clientY - rect.top < 60 && isInTriggerZone(t.clientX, rect)) {
@@ -446,11 +474,39 @@ export default function App() {
   function handleTouchEnd(e: React.TouchEvent) {
     if (touchStartY.current === null) return;
     const t = e.changedTouches[0];
-    if (t.clientY - touchStartY.current > 40) setCcOpen(true);
+    if (t.clientY - touchStartY.current > 40) {
+      setCcOpen(true);
+      markOpenedIfFirstTime();
+    }
     touchStartY.current = null;
   }
 
   const { w, h } = useViewportSize();
+
+  function handleRateClick() {
+    const ctx = getContext();
+    // Falls back to time-since-start if they never completed the gesture,
+    // so we still capture something rather than sending null.
+    const elapsed = timeToOpenRef.current ?? (Date.now() - startTimeRef.current);
+    const hiddenParams = {
+      layout: "modal",
+      hiddenFields: {
+        pid: ctx.pid,
+        pair: ctx.pair,
+        variant: ctx.isVariant ? "lefthand" : "baseline",
+        step: ctx.step,
+        elapsed_ms: elapsed,
+        grip_type: ctx.grip
+      },
+      onSubmit: () => {
+        window.location.href = nextUrl(ctx)
+      }
+    }
+
+    console.log(hiddenParams);
+
+    window.Tally.openPopup("gD17jO", hiddenParams);
+  }
 
   return (
     <div
@@ -510,15 +566,19 @@ export default function App() {
         {/* Control Center */}
         <ControlCenter visible={ccOpen} onClose={() => setCcOpen(false)} />
 
-        {/* Swipe hint */}
-        {!ccOpen && (
-          <div className="absolute top-0 right-0 z-50 pointer-events-none">
-            <div
-              className="mt-12 mr-3 text-white/40 text-[9px] font-medium leading-none"
-              style={{ writingMode: "vertical-rl" }}
-            >
-              swipe ↓
+        {/* Swipe hint, only shown once the participant has started the task */}
+        {!showInstructions && !ccOpen && (
+          <div
+            className={`absolute top-3 z-50 pointer-events-none flex flex-col items-center gap-1 ${
+              CC_TRIGGER_SIDE === "right" ? "right-3" : "left-3"
+            }`}
+          >
+            <div className="w-10 h-10 rounded-full border-2 border-red-500 flex items-center justify-center animate-bounce bg-black/20">
+              <ArrowDown className="w-5 h-5 text-red-500" strokeWidth={3} />
             </div>
+            <span className="text-red-500 text-[10px] font-bold tracking-wide">
+              SWIPE
+            </span>
           </div>
         )}
 
@@ -526,9 +586,31 @@ export default function App() {
         {!ccOpen && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-28 h-1 bg-white/40 rounded-full z-50" />
         )}
+
+        {/* Rate this prototype */}
+        <button
+          onClick={handleRateClick}
+          disabled={!hasOpenedOnce}
+          className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-50 text-sm font-bold px-7 py-3 rounded-full transition-all ${
+            hasOpenedOnce
+              ? "bg-blue-500 text-white shadow-[0_4px_20px_rgba(59,130,246,0.6)] active:scale-95"
+              : "bg-white/20 text-white/40 cursor-not-allowed"
+          }`}
+        >
+          Done testing — Rate this
+        </button>
+
+        {/* Instructions overlay, shown until participant taps Start */}
+        {showInstructions && (
+          <InstructionsOverlay
+            title={INSTRUCTIONS.control_center.title}
+            instructions={INSTRUCTIONS.control_center.text}
+            onStart={handleStart}
+          />
+        )}
       </div>
 
-      
+
     </div>
   );
 }
