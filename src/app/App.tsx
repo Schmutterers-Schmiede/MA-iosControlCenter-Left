@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { getContext, nextUrl, INSTRUCTIONS } from './tallyFlow';
 import { InstructionsOverlay } from './InstructionsOverlay';
+import { GRIP_IMAGES } from '../gripImages';
 
 declare global {
   interface Window {
@@ -62,6 +63,7 @@ const DOCK_ICONS = [
   { name: "Safari", bg: "bg-blue-500", icon: "🧭" },
   { name: "Mail", bg: "bg-blue-400", icon: "✉️" },
 ];
+const ctx = getContext();
 
 function useViewportSize() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -606,6 +608,7 @@ export default function App() {
             title={INSTRUCTIONS.control_center.title}
             instructions={INSTRUCTIONS.control_center.text}
             onStart={handleStart}
+            gripImage={GRIP_IMAGES[ctx.grip]}
           />
         )}
       </div>
