@@ -18,9 +18,9 @@ const VARIANT_LABELS: Record<string, string> = {
 const TITLE = "IOS Control Center";
 
 const INSTRUCTIONS: Record<string, string> = {
-  baseline: "Open the control center by swiping down from the TOP RIGHT CORNER at least 3 TIMES (see on-screen hint after tapping start after tapping start).",
-  onehandmode: "Open the control center by swiping down from the TOP RIGHT CORNER at least 3 TIMES (see on-screen hint after tapping start after tapping start).",
-  lefthand: "Open the control center by swiping down from the TOP LEFT CORNER at least 3 TIMES (see on-screen hint after tapping start after tapping start).",
+  baseline: "Open the control center by swiping down from the TOP RIGHT CORNER at least 3 TIMES (see on-screen hint after tapping start after tapping start). When you're done, tap the 'Rate now' button.",
+  onehandmode: "Open the control center by swiping down from the TOP RIGHT CORNER at least 3 TIMES (see on-screen hint after tapping start after tapping start). When you're done, tap the 'Rate now' button.",
+  lefthand: "Open the control center by swiping down from the TOP LEFT CORNER at least 3 TIMES (see on-screen hint after tapping start after tapping start). When you're done, tap the 'Rate now' button.",
 };
 
 export function InstructionsOverlay({ variant, onStart, swipeSide, gripImage }: Props) {
