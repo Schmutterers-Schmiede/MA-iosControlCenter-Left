@@ -20,7 +20,7 @@ import {
   Lock,
   ArrowDown,
 } from "lucide-react";
-import { getContext, nextUrl, INSTRUCTIONS } from './tallyFlow';
+import { getContext, nextUrl } from './tallyFlow';
 import { InstructionsOverlay } from './InstructionsOverlay';
 import { GRIP_IMAGES } from '../gripImages';
 
@@ -625,8 +625,7 @@ export default function App() {
         {/* Instructions overlay, shown until participant taps Start */}
         {showInstructions && (
           <InstructionsOverlay
-            title={INSTRUCTIONS.control_center.title}
-            instructions={INSTRUCTIONS.control_center.text}
+            variant={ctx.variant}
             onStart={handleStart}
             gripImage={GRIP_IMAGES[ctx.grip]}
           />
